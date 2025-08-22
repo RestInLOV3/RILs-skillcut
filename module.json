@@ -16,7 +16,7 @@
     }
   ],
   "relationships": {
-    "systems": ["dnd5e"],
+    "systems": [{"id": "dnd5e"}],
     "requires": [
       {
         "id": "socketlib",
