@@ -16,8 +16,14 @@
     }
   ],
   "relationships": {
-    "systems": [],
-    "requires": []
+    "systems": ["dnd5e"],
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module",
+        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json"
+      }
+    ]
   },
   "esmodules": [
     "scripts/module.js"
@@ -32,5 +38,6 @@
       "type": "icon",
       "url": "https://avatars2.githubusercontent.com/u/71292812?s=400&u=ccdb4eeb7abf551ca8f314e5a9bfd0479a4d3d41&v=4"
     }
-  ]
+  ],
+  "socket": true
 }
