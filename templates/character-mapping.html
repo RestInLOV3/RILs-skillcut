@@ -1,0 +1,24 @@
+<form>
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th>캐릭터 이름</th>
+        <th>이미지 경로</th>
+        <th>행 삭제</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each Object.entries(characters)}}
+        <tr>
+          <td><input type="text" class="char-name" value="{{this.[0]}}"></td>
+          <td><input type="text" class="char-img" value="{{this.[1]}}"></td>
+          <td><button type="button" class="delete-row">❌</button></td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <button type="button" id="add-row" style="margin-top:10px;">➕ 행 추가</button>
+  <footer class="sheet-footer flexrow" style="margin-top:10px;">
+    <button type="submit"><i class="fas fa-save"></i> 저장</button>
+  </footer>
+</form>

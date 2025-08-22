@@ -1,7 +1,88 @@
-// 모듈 로딩 시 실행
-Hooks.once('init', () => {
-  console.log("My Slide Module loaded!");
+// 로딩되면
+Hooks.once("init", () => {
+  console.log("RILs Skillcut Module loaded!");
+
+  // 1. 실제 데이터 저장용
+  game.settings.register("RILs-skillcut", "characters", {
+    name: "캐릭터 이미지 매핑",
+    scope: "world",
+    config: false,   // 설정 탭에서 바로 보이지 않음
+    type: Object,
+    default: {}
+  });
+
+  // 2. 설정 메뉴 등록
+  game.settings.registerMenu("RILs-skillcut", "charactersMenu", {
+    name: "캐릭터 매핑 편집",
+    label: "편집하기",
+    hint: "캐릭터 이름 ↔ 이미지 경로 매핑을 행 단위로 편집합니다.",
+    icon: "fas fa-user-edit",
+    type: CharacterMappingForm,
+    restricted: true
+  });
 });
+
+// form Application 정의
+class CharacterMappingForm extends FormApplication {
+  static get defaultOptions() {
+    return mergeObject(super.defaultOptions, {
+      title: "캐릭터 이미지 매핑 편집",
+      id: "character-mapping-form",
+      template: "modules/RILs-skillcut/templates/character-mapping.html",
+      width: 600,
+      height: "auto",
+      closeOnSubmit: true
+    });
+  }
+
+  getData() {
+    const characters = game.settings.get("RILs-skillcut", "characters");
+    return { characters };
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+
+    // 행 추가 버튼
+    html.find("#add-row").click(() => {
+      const newRow = $(`
+        <tr>
+          <td><input type="text" class="char-name" placeholder="캐릭터 이름"></td>
+          <td><input type="text" class="char-img" placeholder="이미지 경로"></td>
+          <td><button type="button" class="delete-row">❌</button></td>
+        </tr>
+      `);
+      html.find("tbody").append(newRow);
+
+      // 삭제 버튼
+      newRow.find(".delete-row").click((ev) => {
+        $(ev.currentTarget).closest("tr").remove();
+      });
+    });
+
+    // 기존 행 삭제
+    html.find(".delete-row").click((ev) => {
+      $(ev.currentTarget).closest("tr").remove();
+    });
+  }
+
+  async _updateObject(event, formData) {
+    const html = this.element;
+    const newData = {};
+
+    html.find("tbody tr").each((i, row) => {
+      const name = row.querySelector(".char-name").value.trim();
+      const img = row.querySelector(".char-img").value.trim();
+      if (name && img) newData[name] = img;
+    });
+
+    await game.settings.set("RILs-skillcut", "characters", newData);
+    ui.notifications.info("캐릭터 매핑이 저장되었습니다!");
+  }
+}
+
+
+
 
 // 모든 클라이언트에서 슬라이드 표시 함수
 function slideInMultiple(selectedChars) {
@@ -69,12 +150,18 @@ Hooks.once('socketlib.ready', () => {
   });
 });
 
-// UI 버튼 생성
-Hooks.on('renderChatLog', (log, html, data) => {
-  const btn = $(`<button class="my-slide-btn" title="슬라이드 실행">🖼️</button>`);
-  html.find(".control-buttons").prepend(btn);
+Hooks.once("ready", () => {
+  if (document.querySelector("#chat-controls .control-buttons .fa-star")) return;
 
-  btn.on("click", async () => {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ui-control icon fa-solid fa-star";
+  btn.setAttribute("data-tooltip", "스킬컷");
+  btn.setAttribute("aria-label", "스킬컷");
+
+  btn.addEventListener("click", () => {
+    // ui.notifications.info("슬라이드 버튼 눌림!");
+
     // 캐릭터 선택 다이얼로그
     const characters = game.settings.get("my-slide-module", "characters") || {};
     let charSide = {};
@@ -125,7 +212,7 @@ Hooks.on('renderChatLog', (log, html, data) => {
           dlg.close();
 
           // Socket 호출
-          game.socket.emit('module.my-slide-module', {
+          game.socket.emit("module.my-slide-module", {
             type: "showSlide",
             selectedChars
           });
@@ -135,4 +222,7 @@ Hooks.on('renderChatLog', (log, html, data) => {
 
     dlg.render(true);
   });
+
+  const controls = document.querySelector("#chat-controls .control-buttons");
+  if (controls) controls.prepend(btn);
 });
