@@ -1,20 +1,18 @@
 {
-  "id": "module",
-  "title": "New Module",
-  "description": "",
+  "id": "RILs-skillcut",
+  "title": "RILs Skillcut",
+  "description": "스킬컷...!!",
   "version": "#{VERSION}#",
   "library": "false",
   "manifestPlusVersion": "1.2.0",
   "compatibility": {
-    "minimum": 10,
-    "verified": 10,
-    "maximum": 11
+    "minimum": 13,
+    "verified": 13,
+    "maximum": 13
   },
   "authors": [
     {
-      "name": "The League of Extraordinary FVTT Developers",
-      "url": "https://github.com/League-of-Foundry-Developers",
-      "discord": "discordID#0001"
+      "name": "RestInLOV3"
     }
   ],
   "relationships": {
@@ -23,19 +21,6 @@
   },
   "esmodules": [
     "scripts/module.js"
-  ],
-  "scripts": [
-    "scripts/lib/lib.js"
-  ],
-  "styles": [
-    "styles/module.css"
-  ],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "languages/en.json"
-    }
   ],
   "url": "#{URL}#",
   "manifest": "#{MANIFEST}#",
