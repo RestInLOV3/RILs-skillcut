@@ -99,22 +99,76 @@ class CharacterMappingForm extends FormApplication {
 
     html.find("#add-row").on("click", () => this.#addRow(html));
     html.find(".delete-row").on("click", (ev) => this.#deleteRow(ev));
+
+    // 드래그 앤 드롭 설정
+    this.#setupDragAndDrop(html);
   }
 
   #addRow(html) {
     const newRow = $(`
-      <tr>
+      <tr draggable="true">
+        <td class="drag-handle"><i class="fas fa-grip-vertical"></i></td>
         <td><input type="text" class="char-name" placeholder="캐릭터 이름"></td>
         <td><input type="text" class="char-img" placeholder="이미지 경로"></td>
-        <td><button type="button" class="delete-row">❌</button></td>
+        <td><button type="button" class="delete-row"><i class="fas fa-trash"></i></button></td>
       </tr>
     `);
     html.find("tbody").append(newRow);
     newRow.find(".delete-row").on("click", (ev) => this.#deleteRow(ev));
+    this.#setupRowDrag(newRow[0]);
+    this.setPosition({ height: "auto" });
   }
 
   #deleteRow(ev) {
     $(ev.currentTarget).closest("tr").remove();
+    this.setPosition({ height: "auto" });
+  }
+
+  #setupDragAndDrop(html) {
+    const rows = html.find("tbody tr");
+    rows.each((_, row) => this.#setupRowDrag(row));
+  }
+
+  #setupRowDrag(row) {
+    let draggedRow = null;
+
+    row.addEventListener("dragstart", (e) => {
+      draggedRow = row;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    row.addEventListener("dragend", () => {
+      row.classList.remove("dragging");
+      document.querySelectorAll(".drag-over").forEach((el) => el.classList.remove("drag-over"));
+    });
+
+    row.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      row.classList.add("drag-over");
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drag-over");
+    });
+
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("drag-over");
+      const dragging = document.querySelector(".dragging");
+      if (dragging && dragging !== row) {
+        const tbody = row.parentNode;
+        const rows = Array.from(tbody.children);
+        const dragIdx = rows.indexOf(dragging);
+        const dropIdx = rows.indexOf(row);
+        if (dragIdx < dropIdx) {
+          tbody.insertBefore(dragging, row.nextSibling);
+        } else {
+          tbody.insertBefore(dragging, row);
+        }
+      }
+    });
   }
 
   async _updateObject(event, formData) {

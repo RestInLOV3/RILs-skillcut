@@ -1,26 +1,28 @@
-<form>
-  <table style="width: 100%; border-collapse: collapse">
+<form class="skillcut-mapping-form">
+  <table>
     <thead>
       <tr>
+        <th class="drag-col"></th>
         <th>캐릭터 이름</th>
         <th>이미지 경로</th>
-        <th>행 삭제</th>
+        <th class="delete-col"></th>
       </tr>
     </thead>
     <tbody>
       {{#each characters}}
-      <tr>
+      <tr draggable="true">
+        <td class="drag-handle"><i class="fas fa-grip-vertical"></i></td>
         <td><input type="text" class="char-name" value="{{this.name}}" /></td>
         <td><input type="text" class="char-img" value="{{this.img}}" /></td>
-        <td><button type="button" class="delete-row">❌</button></td>
+        <td><button type="button" class="delete-row"><i class="fas fa-trash"></i></button></td>
       </tr>
       {{/each}}
     </tbody>
   </table>
-  <button type="button" id="add-row" style="margin-top: 10px">
-    ➕ 행 추가
+  <button type="button" id="add-row">
+    <i class="fas fa-plus"></i> 행 추가
   </button>
-  <footer class="sheet-footer flexrow" style="margin-top: 10px">
+  <footer class="sheet-footer flexrow">
     <button type="submit"><i class="fas fa-save"></i> 저장</button>
   </footer>
 </form>
