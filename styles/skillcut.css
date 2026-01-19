@@ -79,12 +79,53 @@
 }
 
 /* ===========================================
-   캐릭터 선택 다이얼로그
+   캐릭터 선택 다이얼로그 - 윈도우 오버라이드
+   =========================================== */
+.skillcut-select-dialog {
+  background: #ffffff;
+  border: 1px solid var(--sc-border);
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.skillcut-select-dialog .window-header {
+  background: #2a3441;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  padding: 0.875rem 1rem;
+}
+
+.skillcut-select-dialog .window-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(106, 158, 199, 0.8);
+}
+
+.skillcut-select-dialog .window-header .close {
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.15s ease;
+}
+
+.skillcut-select-dialog .window-header .close:hover {
+  color: var(--sc-danger);
+}
+
+.skillcut-select-dialog .window-content {
+  background: #ffffff;
+  padding: 1.25rem;
+  border-radius: 0 0 12px 12px;
+}
+
+/* ===========================================
+   캐릭터 선택 다이얼로그 - 내부 스타일
    =========================================== */
 .skillcut-dialog {
   display: flex;
-  gap: 1.5rem;
-  padding: 0.5rem;
+  gap: 1rem;
 }
 
 .skillcut-dialog-side {
@@ -97,13 +138,16 @@
 
 .skillcut-dialog-side h3 {
   margin: 0 0 0.75rem 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sc-border);
-  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  background: #2a3441;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--sc-text-muted);
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(106, 158, 199, 0.8);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .skillcut-dialog-side label {
@@ -130,14 +174,14 @@
   padding-top: 1rem;
 }
 
-.skillcut-dialog-footer button,
 #skillcut-confirm {
   width: 100%;
-  padding: 0.625rem 1rem;
+  padding: 0.75rem 1rem;
   background: var(--sc-accent);
   color: #fff;
   border: none;
   border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -145,12 +189,10 @@
     transform 0.1s ease;
 }
 
-.skillcut-dialog-footer button:hover,
 #skillcut-confirm:hover {
   background: var(--sc-accent-hover);
 }
 
-.skillcut-dialog-footer button:active,
 #skillcut-confirm:active {
   transform: scale(0.98);
 }

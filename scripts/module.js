@@ -204,12 +204,18 @@ class CharacterSelectDialog {
   render() {
     const content = this.#buildContent();
 
-    new Dialog({
-      title: "캐릭터 선택",
-      content,
-      buttons: {},
-      render: (html) => this.#activateListeners(html),
-    }).render(true);
+    new Dialog(
+      {
+        title: "캐릭터 선택",
+        content,
+        buttons: {},
+        render: (html) => this.#activateListeners(html),
+      },
+      {
+        classes: ["skillcut-select-dialog"],
+        width: 500,
+      }
+    ).render(true);
   }
 
   #buildContent() {
