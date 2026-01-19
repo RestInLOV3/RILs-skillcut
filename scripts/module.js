@@ -23,7 +23,7 @@ class SkillcutSlideManager {
    */
   static show(selectedChars) {
     this.#removeExistingContainer();
-    const container = this.#createContainer(selectedChars.length);
+    const container = this.#createContainer();
 
     selectedChars.forEach(({ imgPath, side }) => {
       const img = this.#createSlideImage(imgPath, side);
@@ -38,16 +38,10 @@ class SkillcutSlideManager {
     document.getElementById(this.CONTAINER_ID)?.remove();
   }
 
-  static #createContainer(count) {
+  static #createContainer() {
     const container = document.createElement("div");
     container.id = this.CONTAINER_ID;
-
-    // 수직 위치 계산: 이미지 개수에 따라 중앙 정렬
-    const verticalOffset = (count - 1) * 8.3 + 4.15;
-    const gapOffset = ((count - 1) * this.IMAGE_GAP) / 2;
-    container.style.top = `calc(50% - ${verticalOffset}% - ${gapOffset}px)`;
-    container.style.rowGap = `${this.IMAGE_GAP}px`;
-
+    container.style.gap = `${this.IMAGE_GAP}px`;
     document.body.appendChild(container);
     return container;
   }
