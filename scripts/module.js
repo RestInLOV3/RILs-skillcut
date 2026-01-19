@@ -1,36 +1,89 @@
-// ----------------------------
-// 캐릭터 매핑 저장
-// ----------------------------
-Hooks.once("init", () => {
-  console.log("RILs Skillcut Module loaded!");
+/**
+ * RILs Skillcut Module
+ * FVTT 13 / DnD 5e용 스킬컷 연출 모듈
+ */
 
-  game.settings.register("RILs-skillcut", "characters", {
-    name: "캐릭터 이미지 매핑",
-    scope: "world",
-    config: false,
-    type: Object,
-    default: {},
-  });
+const MODULE_ID = "RILs-skillcut";
 
-  game.settings.registerMenu("RILs-skillcut", "charactersMenu", {
-    name: "캐릭터 매핑 편집",
-    label: "편집하기",
-    hint: "캐릭터 이름 ↔ 이미지 경로 매핑을 행 단위로 편집합니다.",
-    icon: "fas fa-user-edit",
-    type: CharacterMappingForm,
-    restricted: true,
-  });
-});
+// ===========================================
+// 슬라이드 매니저
+// ===========================================
+class SkillcutSlideManager {
+  static CONTAINER_ID = "skillcut-container";
+  static IMAGE_GAP = 20;
+  static TIMINGS = {
+    slideIn: 50,
+    fadeOut: 3000,
+    cleanup: 5000,
+  };
 
-// ----------------------------
-// FormApplication 정의
-// ----------------------------
+  /**
+   * 여러 캐릭터의 슬라이드 이미지를 표시
+   * @param {Array<{imgPath: string, side: 'left'|'right'}>} selectedChars
+   */
+  static show(selectedChars) {
+    this.#removeExistingContainer();
+    const container = this.#createContainer(selectedChars.length);
+
+    selectedChars.forEach(({ imgPath, side }) => {
+      const img = this.#createSlideImage(imgPath, side);
+      container.appendChild(img);
+      this.#animateImage(img);
+    });
+
+    this.#scheduleCleanup();
+  }
+
+  static #removeExistingContainer() {
+    document.getElementById(this.CONTAINER_ID)?.remove();
+  }
+
+  static #createContainer(count) {
+    const container = document.createElement("div");
+    container.id = this.CONTAINER_ID;
+
+    // 수직 위치 계산: 이미지 개수에 따라 중앙 정렬
+    const verticalOffset = (count - 1) * 8.3 + 4.15;
+    const gapOffset = ((count - 1) * this.IMAGE_GAP) / 2;
+    container.style.top = `calc(50% - ${verticalOffset}% - ${gapOffset}px)`;
+    container.style.rowGap = `${this.IMAGE_GAP}px`;
+
+    document.body.appendChild(container);
+    return container;
+  }
+
+  static #createSlideImage(imgPath, side) {
+    const img = document.createElement("img");
+    img.src = imgPath;
+    img.className = `skillcut-image from-${side}`;
+    return img;
+  }
+
+  static #animateImage(img) {
+    setTimeout(() => {
+      img.classList.add("visible", "expanding");
+
+      setTimeout(() => img.classList.add("fade-out"), this.TIMINGS.fadeOut);
+      setTimeout(() => img.remove(), this.TIMINGS.cleanup);
+    }, this.TIMINGS.slideIn);
+  }
+
+  static #scheduleCleanup() {
+    setTimeout(() => {
+      document.getElementById(this.CONTAINER_ID)?.remove();
+    }, this.TIMINGS.cleanup);
+  }
+}
+
+// ===========================================
+// 캐릭터 매핑 폼
+// ===========================================
 class CharacterMappingForm extends FormApplication {
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       title: "캐릭터 이미지 매핑 편집",
       id: "character-mapping-form",
-      template: "modules/RILs-skillcut/templates/character-mapping.html",
+      template: `modules/${MODULE_ID}/templates/character-mapping.html`,
       width: 600,
       height: "auto",
       closeOnSubmit: true,
@@ -38,7 +91,7 @@ class CharacterMappingForm extends FormApplication {
   }
 
   getData() {
-    const characters = game.settings.get("RILs-skillcut", "characters") || {};
+    const characters = game.settings.get(MODULE_ID, "characters") ?? {};
     return {
       characters: Object.entries(characters).map(([name, img]) => ({
         name,
@@ -50,201 +103,233 @@ class CharacterMappingForm extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
 
-    html.find("#add-row").click(() => {
-      const newRow = $(`
-        <tr>
-          <td><input type="text" class="char-name" placeholder="캐릭터 이름"></td>
-          <td><input type="text" class="char-img" placeholder="이미지 경로"></td>
-          <td><button type="button" class="delete-row">❌</button></td>
-        </tr>
-      `);
-      html.find("tbody").append(newRow);
-      newRow
-        .find(".delete-row")
-        .click((ev) => $(ev.currentTarget).closest("tr").remove());
-    });
+    html.find("#add-row").on("click", () => this.#addRow(html));
+    html.find(".delete-row").on("click", (ev) => this.#deleteRow(ev));
+  }
 
-    html
-      .find(".delete-row")
-      .click((ev) => $(ev.currentTarget).closest("tr").remove());
+  #addRow(html) {
+    const newRow = $(`
+      <tr>
+        <td><input type="text" class="char-name" placeholder="캐릭터 이름"></td>
+        <td><input type="text" class="char-img" placeholder="이미지 경로"></td>
+        <td><button type="button" class="delete-row">❌</button></td>
+      </tr>
+    `);
+    html.find("tbody").append(newRow);
+    newRow.find(".delete-row").on("click", (ev) => this.#deleteRow(ev));
+  }
+
+  #deleteRow(ev) {
+    $(ev.currentTarget).closest("tr").remove();
   }
 
   async _updateObject(event, formData) {
-    const html = this.element;
     const newData = {};
-    html.find("tbody tr").each((i, row) => {
+    this.element.find("tbody tr").each((_, row) => {
       const name = row.querySelector(".char-name").value.trim();
       const img = row.querySelector(".char-img").value.trim();
-      if (name && img) newData[name] = img;
+      if (name && img) {
+        newData[name] = img;
+      }
     });
-    await game.settings.set("RILs-skillcut", "characters", newData);
+
+    await game.settings.set(MODULE_ID, "characters", newData);
     ui.notifications.info("캐릭터 매핑이 저장되었습니다!");
   }
 }
 
-// ----------------------------
-// SocketLib 등록 및 슬라이드 함수 등록
-// ----------------------------
-let socket;
+// ===========================================
+// 캐릭터 선택 다이얼로그
+// ===========================================
+class CharacterSelectDialog {
+  #characters;
+  #charSide;
+  #socket;
 
-Hooks.once("socketlib.ready", () => {
-  socket = socketlib.registerModule("RILs-skillcut");
-  socket.register("showSlide", (selectedChars) =>
-    slideInMultiple(selectedChars)
-  );
-});
+  constructor(characters, socket) {
+    this.#characters = characters;
+    this.#socket = socket;
+    this.#charSide = {};
+    Object.keys(characters).forEach((name) => (this.#charSide[name] = null));
+  }
 
-Hooks.once("ready", () => {
-  const tryCreateButton = () => {
-    const controls = document.querySelector("#chat-controls .control-buttons");
-    if (!controls) return setTimeout(tryCreateButton, 500); // DOM 아직 없으면 재시도
-    createSlideButton();
-  };
-  tryCreateButton();
-});
+  render() {
+    const content = this.#buildContent();
 
-// ----------------------------
-// 슬라이드 표시 함수
-// ----------------------------
-function slideInMultiple(selectedChars) {
-  const gap = 20;
-  const num = selectedChars.length;
-
-  const oldContainer = document.getElementById("macro-slide-container");
-  if (oldContainer) oldContainer.remove();
-
-  const container = document.createElement("div");
-  container.id = "macro-slide-container";
-  container.style.position = "fixed";
-  container.style.top = "50%";
-  container.style.left = "0";
-  container.style.width = "100%";
-  container.style.display = "flex";
-  container.style.flexDirection = "column";
-  container.style.justifyContent = "center";
-  container.style.alignItems = "center";
-  container.style.rowGap = `${gap}px`;
-  container.style.zIndex = 9999;
-  document.body.appendChild(container);
-
-  selectedChars.forEach(({ imgPath, side }) => {
-    const img = document.createElement("img");
-    img.src = imgPath;
-    img.style.width = "auto";
-    img.style.height = "80%";
-    img.style.objectFit = "contain";
-    img.style.opacity = "1";
-    img.style.clipPath = "inset(49% 0 49% 0)";
-    img.style.transition = "opacity 2s ease-out, transform 0.7s ease-in-out";
-    img.style.transform =
-      side === "left" ? "translate(-150%, -50%)" : "translate(150%, -50%)";
-    container.appendChild(img);
-
-    setTimeout(() => {
-      img.style.transform = "translate(0%, -50%)";
-
-      const style = document.createElement("style");
-      style.innerHTML = `
-        @keyframes clipGrow {
-          0% { clip-path: inset(49% 0 49% 0); }
-          100% { clip-path: inset(0 0 0 0); }
-        }
-        img[src='${imgPath}'] {
-          animation: clipGrow 1s cubic-bezier(0.8,0,0.2,1) 1s forwards;
-        }`;
-      document.head.appendChild(style);
-
-      setTimeout(() => (img.style.opacity = "0"), 3000);
-      setTimeout(() => {
-        img.remove();
-        style.remove();
-      }, 5000);
-    }, 50);
-  });
-
-  setTimeout(() => {
-    const container = document.getElementById("macro-slide-container");
-    if (container) container.remove();
-  }, 5000);
-}
-
-// ----------------------------
-// 슬라이드 버튼 생성
-// ----------------------------
-function createSlideButton() {
-  if (document.querySelector("#chat-controls .control-buttons .fa-star"))
-    return;
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "ui-control icon fa-solid fa-star";
-  btn.setAttribute("data-tooltip", "스킬컷");
-  btn.setAttribute("aria-label", "스킬컷");
-
-  btn.addEventListener("click", () => {
-    const characters = game.settings.get("RILs-skillcut", "characters") || {};
-    let charSide = {};
-    Object.keys(characters).forEach((name) => (charSide[name] = null));
-
-    let content = `<div style="display:flex; justify-content:space-between; width:300px;">`;
-    ["left", "right"].forEach((side) => {
-      content += `<div style="text-align:center;"><h3>${side.toUpperCase()}</h3>`;
-      Object.keys(characters).forEach((name) => {
-        content += `<label>
-          <input type="checkbox" data-side="${side}" data-char="${name}"> ${name}
-        </label><br>`;
-      });
-      content += `</div>`;
-    });
-    content += `</div><div style="text-align:center; margin-top:10px;">
-      <button id="done">선택 완료</button>
-    </div>`;
-
-    const dlg = new Dialog({
+    new Dialog({
       title: "캐릭터 선택",
       content,
       buttons: {},
-      render: (htmlEl) => {
-        htmlEl.find("input[type=checkbox]").each((i, input) => {
-          input.addEventListener("change", () => {
-            const side = input.dataset.side;
-            const charName = input.dataset.char;
-            const otherSide = side === "left" ? "right" : "left";
-            if (input.checked) {
-              const otherInput = htmlEl.find(
-                `input[data-side=${otherSide}][data-char="${charName}"]`
-              )[0];
-              if (otherInput) otherInput.checked = false;
-              charSide[charName] = side;
-            } else charSide[charName] = null;
-          });
-        });
+      render: (html) => this.#activateListeners(html),
+    }).render(true);
+  }
 
-        htmlEl.find("#done")[0].addEventListener("click", () => {
-          const selectedChars = Object.entries(charSide)
-            .filter(([name, side]) => side)
-            .map(([name, side]) => ({ imgPath: characters[name], side }));
+  #buildContent() {
+    const charNames = Object.keys(this.#characters);
 
-          if (selectedChars.length === 0) {
-            ui.notifications.warn("캐릭터를 하나 이상 선택해야 합니다.");
-            return;
-          }
+    const buildSide = (side) => {
+      const checkboxes = charNames
+        .map(
+          (name) =>
+            `<label><input type="checkbox" data-side="${side}" data-char="${name}"> ${name}</label>`
+        )
+        .join("");
 
-          dlg.close();
+      return `
+        <div class="skillcut-dialog-side">
+          <h3>${side.toUpperCase()}</h3>
+          ${checkboxes}
+        </div>
+      `;
+    };
 
-          // 모든 클라이언트에서 슬라이드 실행
-          if (socket) {
-            socket.executeForEveryone("showSlide", selectedChars);
-          } else {
-            ui.notifications.error("SocketLib가 준비되지 않았습니다.");
-          }
-        });
-      },
+    return `
+      <div class="skillcut-dialog">
+        ${buildSide("left")}
+        ${buildSide("right")}
+      </div>
+      <div class="skillcut-dialog-footer">
+        <button id="skillcut-confirm">선택 완료</button>
+      </div>
+    `;
+  }
+
+  #activateListeners(html) {
+    html.find("input[type=checkbox]").on("change", (ev) => {
+      this.#handleCheckboxChange(html, ev.currentTarget);
     });
 
-    dlg.render(true);
+    html.find("#skillcut-confirm").on("click", () => {
+      this.#handleConfirm(html);
+    });
+  }
+
+  #handleCheckboxChange(html, input) {
+    const { side, char: charName } = input.dataset;
+    const otherSide = side === "left" ? "right" : "left";
+
+    if (input.checked) {
+      // 반대쪽 체크 해제
+      const otherInput = html.find(
+        `input[data-side="${otherSide}"][data-char="${charName}"]`
+      )[0];
+      if (otherInput) otherInput.checked = false;
+      this.#charSide[charName] = side;
+    } else {
+      this.#charSide[charName] = null;
+    }
+  }
+
+  #handleConfirm(html) {
+    const selectedChars = Object.entries(this.#charSide)
+      .filter(([_, side]) => side !== null)
+      .map(([name, side]) => ({
+        imgPath: this.#characters[name],
+        side,
+      }));
+
+    if (selectedChars.length === 0) {
+      ui.notifications.warn("캐릭터를 하나 이상 선택해야 합니다.");
+      return;
+    }
+
+    // 다이얼로그 닫기
+    html.closest(".app").find(".close").trigger("click");
+
+    // 모든 클라이언트에서 슬라이드 실행
+    if (this.#socket) {
+      this.#socket.executeForEveryone("showSlide", selectedChars);
+    } else {
+      ui.notifications.error("SocketLib가 준비되지 않았습니다.");
+    }
+  }
+}
+
+// ===========================================
+// 스킬컷 버튼 매니저
+// ===========================================
+class SkillcutButton {
+  static #socket = null;
+
+  static setSocket(socket) {
+    this.#socket = socket;
+  }
+
+  static create() {
+    const controls = document.querySelector("#chat-controls .control-buttons");
+    if (!controls) return false;
+
+    // 중복 방지
+    if (controls.querySelector(".skillcut-btn")) return true;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ui-control icon fa-solid fa-star skillcut-btn";
+    btn.dataset.tooltip = "스킬컷";
+    btn.setAttribute("aria-label", "스킬컷");
+
+    btn.addEventListener("click", () => this.#onClick());
+    controls.prepend(btn);
+    return true;
+  }
+
+  static #onClick() {
+    const characters = game.settings.get(MODULE_ID, "characters") ?? {};
+
+    if (Object.keys(characters).length === 0) {
+      ui.notifications.warn(
+        "등록된 캐릭터가 없습니다. 모듈 설정에서 캐릭터를 추가하세요."
+      );
+      return;
+    }
+
+    new CharacterSelectDialog(characters, this.#socket).render();
+  }
+}
+
+// ===========================================
+// 모듈 초기화
+// ===========================================
+Hooks.once("init", () => {
+  console.log(`${MODULE_ID} | 모듈 초기화 중...`);
+
+  // 캐릭터 매핑 저장소 등록
+  game.settings.register(MODULE_ID, "characters", {
+    name: "캐릭터 이미지 매핑",
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
   });
 
-  const controls = document.querySelector("#chat-controls .control-buttons");
-  if (controls) controls.prepend(btn);
-}
+  // 설정 메뉴 등록
+  game.settings.registerMenu(MODULE_ID, "charactersMenu", {
+    name: "캐릭터 매핑 편집",
+    label: "편집하기",
+    hint: "캐릭터 이름 ↔ 이미지 경로 매핑을 행 단위로 편집합니다.",
+    icon: "fas fa-user-edit",
+    type: CharacterMappingForm,
+    restricted: true,
+  });
+});
+
+// SocketLib 등록
+Hooks.once("socketlib.ready", () => {
+  const socket = socketlib.registerModule(MODULE_ID);
+  socket.register("showSlide", (selectedChars) =>
+    SkillcutSlideManager.show(selectedChars)
+  );
+  SkillcutButton.setSocket(socket);
+});
+
+// UI 준비 완료 후 버튼 생성
+Hooks.once("ready", () => {
+  console.log(`${MODULE_ID} | 모듈 로드 완료!`);
+
+  const tryCreateButton = () => {
+    if (!SkillcutButton.create()) {
+      setTimeout(tryCreateButton, 500);
+    }
+  };
+  tryCreateButton();
+});

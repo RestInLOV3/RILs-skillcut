@@ -1,7 +1,7 @@
 {
   "id": "RILs-skillcut",
   "title": "RILs Skillcut",
-  "description": "스킬컷...!!",
+  "description": "dnd 5e에서 스킬컷을 띄우는 모듈",
   "version": "#{VERSION}#",
   "library": "false",
   "manifestPlusVersion": "1.2.0",
@@ -27,6 +27,9 @@
   },
   "esmodules": [
     "scripts/module.js"
+  ],
+  "styles": [
+    "styles/skillcut.css"
   ],
   "url": "#{URL}#",
   "manifest": "#{MANIFEST}#",
