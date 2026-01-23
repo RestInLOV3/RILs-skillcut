@@ -19,7 +19,7 @@ Foundry VTT 13 / D&D 5e용 스킬컷 연출 모듈입니다.
 1. Foundry VTT의 **Add-on Modules** 탭에서 **Install Module** 클릭
 2. Manifest URL 입력:
    ```
-   https://github.com/YOUR_USERNAME/RILs-skillcut/releases/latest/download/module.json
+   https://github.com/RestInLOV3/RILs-skillcut/releases/latest/download/module.json
    ```
 3. **Install** 클릭
 
